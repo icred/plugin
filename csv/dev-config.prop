@@ -1,0 +1,1 @@
+registeredPlugins = eu.icred.plugin.csv.Plugin,eu.icred.plugin.csv.test.TesterPlugin
