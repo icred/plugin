@@ -162,7 +162,6 @@ public class ShellPrinter implements IExportWorker {
         if (meta != null) {
             System.out.println();
             System.out.println(prefix + "  format    = " + meta.getFormat());
-            System.out.println(prefix + "  subset    = " + meta.getProcess());
             System.out.println(prefix + "  version   = " + meta.getVersion());
             System.out.println(prefix + "  creator   = " + meta.getCreator());
             System.out.println(prefix + "  publisher = " + meta.getPublisher());
