@@ -5,17 +5,19 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 
 import eu.icred.deprecated.IConverterDescriptor;
 import eu.icred.deprecated.ITransformer;
 import eu.icred.deprecated.impl.BasicConverter;
-import eu.icred.model.annotation.DataField;
 import eu.icred.model.annotation.ObjectIdentifier;
 import eu.icred.model.node.AbstractNode;
 import eu.icred.model.node.Container;
+import eu.icred.model.node.Period;
 
 /**
  * basic generic converter for every sub object/node of a zgif object, e.g.
@@ -80,7 +82,13 @@ abstract public class NodeConverter<Node extends AbstractNode> extends BasicConv
                             try {
                                 connectObjectWithContainer(container, obj, line);
                             } catch (Exception e) {
-                                throw new Exception("unable to connect object " + obj.toString() + " to zgif. Are the parent-IDs correct?", e);
+                                Map<String, String> parentIds = new HashMap<String, String>();
+                                parentIds.put("Period", line.getOriginalFields().get("PERIOD.IDENTIFIER"));
+                                for (Map.Entry<Class<?>, String> pair : BasicEntityNodeConverter.getParentsFromLine(line).entrySet()) {
+                                    parentIds.put(pair.getKey().getSimpleName(), pair.getValue());
+                                }
+                                        
+                                throw new Exception("unable to connect object " + obj.toString() + " to zgif. Are the parent-IDs ("+parentIds+") correct?", e);
                             }
                         }
                     }
@@ -91,7 +99,7 @@ abstract public class NodeConverter<Node extends AbstractNode> extends BasicConv
                 }
             } while (line != null);
         } catch (Exception e) {
-            logger.error("unable to read csv stream for " + type.getSimpleName() + " objects", e);
+            logger.error("unable to read csv stream for " + type.getSimpleName() + " objects");
         }
     }
 

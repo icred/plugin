@@ -41,141 +41,90 @@ public class UnitConverter extends BasicEntityNodeConverter<Unit> {
      *            the original csv data line
      */
     public void connectObjectWithContainer(Container zgif, Unit unit, CSVLine<Unit> csvLine) {
-        Map<String, String> originalCSV = csvLine.getOriginalFields();
-
-        String periodIdentifier = originalCSV.get("PERIOD.IDENTIFIER");
-        Data root = null;
-        if (periodIdentifier != null && !periodIdentifier.isEmpty()) {
-            Period period = zgif.getPeriods().get(periodIdentifier);
-            root = period.getData();
-        } else {
-            root = zgif.getMaindata();
-        }
-
         Map<Class<?>, String> foundParents = new HashMap<Class<?>, String>();
-        for (Map.Entry<String, String> entry : originalCSV.entrySet()) {
-            String key = entry.getKey();
-            if (key.endsWith(".OBJECT_ID_SENDER")) {
-                Class<?> clazz = null;
-                for (Class<?> testClass : x) {
-                    if (testClass.getSimpleName().toUpperCase().equals(key.substring(0, key.indexOf(".")))) {
-                        clazz = testClass;
-                        break;
+        String periodIdentifier = null;
+        try {
+            Map<String, String> originalCSV = csvLine.getOriginalFields();
+
+            periodIdentifier = originalCSV.get("PERIOD.IDENTIFIER");
+            Data root = null;
+            if (periodIdentifier != null && !periodIdentifier.isEmpty()) {
+                Period period = zgif.getPeriods().get(periodIdentifier);
+                root = period.getData();
+            } else {
+                root = zgif.getMaindata();
+            }
+
+            for (Map.Entry<String, String> entry : originalCSV.entrySet()) {
+                String key = entry.getKey();
+                if (key.endsWith(".OBJECT_ID_SENDER")) {
+                    Class<?> clazz = null;
+                    for (Class<?> testClass : x) {
+                        if (testClass.getSimpleName().toUpperCase().equals(key.substring(0, key.indexOf(".")))) {
+                            clazz = testClass;
+                            break;
+                        }
                     }
+
+                    foundParents.put(clazz, entry.getValue());
                 }
-
-                foundParents.put(clazz, entry.getValue());
             }
-        }
 
-        String companyId = foundParents.get(Company.class).replaceFirst("^0+(?!$)", "");
-        Company company = root.getCompanies().get(companyId);
+            String companyId = foundParents.get(Company.class);
+            Company company = root.getCompanies().get(companyId);
 
-        String propertyId = foundParents.get(Property.class).replaceFirst("^0+(?!$)", "");
-        Property property = company.getProperties().get(propertyId);
+            String propertyId = foundParents.get(Property.class);
+            Property property = company.getProperties().get(propertyId);
 
-        String buildingId = foundParents.get(Building.class).replaceFirst("^0+(?!$)", "");
-        String leaseId = foundParents.get(Lease.class).replaceFirst("^0+(?!$)", "");
-        if (buildingId != null) {
-            Building building = property.getBuildings().get(buildingId);
-            if (building != null) {
-                Map<String, Unit> units = building.getUnits();
-                if (units == null) {
-                    units = new HashMap<String, Unit>();
-                    building.setUnits(units);
-                }
-
-                String unitId = unit.getObjectIdSender().replaceFirst("^0+(?!$)", "");
-                String hash = "c" + companyId + "-p" + propertyId + "-l" + leaseId + "-u" + unitId;
-                unit.setHash(hash);
-
-                units.put(unit.getObjectIdSender(), unit);
-            }
-        }
-
-        if (leaseId != null) {
-            Map<String, Lease> leases = property.getLeases();
-            if (leases != null) {
-                Lease lease = leases.get(leaseId);
-                if (lease != null) {
-                    Map<String, LeasedUnit> units = lease.getLeasedUnits();
+            String buildingId = foundParents.get(Building.class);
+            String leaseId = foundParents.get(Lease.class);
+            if (buildingId != null) {
+                Building building = property.getBuildings().get(buildingId);
+                if (building != null) {
+                    Map<String, Unit> units = building.getUnits();
                     if (units == null) {
-                        units = new HashMap<String, LeasedUnit>();
-                        lease.setLeasedUnits(units);
+                        units = new HashMap<String, Unit>();
+                        building.setUnits(units);
                     }
 
-                    LeasedUnit lUnit = new LeasedUnit();
-                    String unitHash = unit.getHash();
-                    lUnit.setHash(unitHash);
+                    String unitId = unit.getObjectIdSender();
+                    String hash = "c" + companyId + "-p" + propertyId + "-u" + unitId;
+                    unit.setHash(hash);
 
-                    units.put(unitHash, lUnit);
+                    units.put(unit.getObjectIdSender(), unit);
                 }
             }
-        }
 
-        //
-        // AbstractNode curNode = root;
-        // for (Class<?> clazz : x) {
-        // if(foundParents.containsKey(clazz)) {
-        // String parentId = foundParents.get(clazz);
-        // Map<String, AbstractEntityNode> list = (Map<String,
-        // AbstractEntityNode>) getNodeList(curNode, clazz);
-        // if(list.get(parentId) != null) {
-        // curNode = list.get(parentId);
-        // }
-        // if(entity instanceof Unit) {
-        // if(clazz.equals(Building.class) || clazz.equals(Land.class)) {
-        // Map<String, EntityNode> entityList = getNodeList(curNode, this.type);
-        // entityList.put(entity.getObjectIdSender(), entity);
-        // }
-        // }
-        // }
-        // }
-        //
-        // Map<String, EntityNode> entityList = getNodeList(curNode, this.type);
-        // entityList.put(entity.getObjectIdSender(), entity);
-        //
-        // System.out.println(curNode.getClass());
-        //
-        // Information.getHierarchicalParentClassesOfNode(root.getClass(),
-        // entity.getClass());
-        //
-        // // Iterator<Class<?>> parentIterator =
-        // //
-        // Arrays.asList(Information.getParentClassesOfNode(object.getClass())).iterator();
-        //
-        // System.out.println("=== " + entity + " ===");
-        //
-        // AbstractNode curParent = root;
-        // while (curParent != null) {
-        // System.out.println(root);
-        // Class<?> nextParentClass = null;// parentIterator.next();
-        // List<Field> nodeListFields = new
-        // NodeInformation(curParent.getClass()).getNodeLists();
-        //
-        // curParent = null;
-        // for (Field nodeListField : nodeListFields) {
-        // ParameterizedType pt = (ParameterizedType)
-        // nodeListField.getGenericType();
-        // String typeName = pt.getActualTypeArguments()[1].toString();
-        //
-        // if
-        // (typeName.endsWith(nextParentClass.getSimpleName().replaceFirst("Abstract",
-        // ""))) {
-        // String typeNameCSV = typeName.substring(typeName.lastIndexOf(".") +
-        // 1).toUpperCase();
-        // String nextParentObjectId = originalCSV.get(typeNameCSV +
-        // ".OBJECT_ID_SENDER");
-        //
-        // PropertyDescriptor pd = new
-        // PropertyDescriptor(nodeListField.getName(), curParent.getClass());
-        // Method getListMethod = pd.getReadMethod();
-        // Map<String, AbstractNode> listOfNodes = (Map<String, AbstractNode>)
-        // getListMethod.invoke(curParent);
-        // AbstractNode nextParent = listOfNodes.get(nextParentObjectId);
-        // curParent = nextParent;
-        // }
-        // }
-        // }
+            if (leaseId != null) {
+                Map<String, Lease> leases = property.getLeases();
+                if (leases != null) {
+                    Lease lease = leases.get(leaseId);
+                    if (lease != null) {
+                        Map<String, LeasedUnit> units = lease.getLeasedUnits();
+                        if (units == null) {
+                            units = new HashMap<String, LeasedUnit>();
+                            lease.setLeasedUnits(units);
+                        }
+
+                        LeasedUnit lUnit = new LeasedUnit();
+                        String unitHash = unit.getHash();
+                        lUnit.setHash(unitHash);
+
+                        units.put(unitHash, lUnit);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            String parentsString = "[";
+            for (Map.Entry<Class<?>, String> parent : foundParents.entrySet()) {
+                if(parentsString == "[") {
+                    parentsString += parent.getKey().getSimpleName()+":"+parent.getValue();
+                } else {
+                    parentsString += ", "+parent.getKey().getSimpleName()+":"+parent.getValue();
+                }
+            }
+            parentsString += "]";
+            throw new RuntimeException("error connecting unit (id="+unit.getObjectIdSender()+", period-id="+periodIdentifier+", parents="+parentsString+") into zgif object tree", ex);
+        }
     }
 }

@@ -47,27 +47,27 @@ public class BasicEntityNodeConverter<EntityNode extends AbstractEntityNode> ext
     }
 
     final static List<Class<? extends AbstractEntityNode>> x = new ArrayList<Class<? extends AbstractEntityNode>>() {
-                                                                 {
-                                                                     this.add(Company.class);
-                                                                     this.add(Property.class);
-                                                                     this.add(Project.class);
-                                                                     this.add(ServiceContract.class);
-                                                                     this.add(Valuation.class);
-                                                                     this.add(Building.class);
-                                                                     this.add(Lease.class);
-                                                                     this.add(Land.class);
-                                                                     this.add(Unit.class);
-                                                                     this.add(LeasedUnit.class);
-                                                                     this.add(Term.class);
-                                                                     this.add(Account.class);
-                                                                     this.add(BookEntry.class);
-                                                                     this.add(Record.class);
-                                                                 }
-                                                             };
+        {
+            this.add(Company.class);
+            this.add(Property.class);
+            this.add(Project.class);
+            this.add(ServiceContract.class);
+            this.add(Valuation.class);
+            this.add(Building.class);
+            this.add(Lease.class);
+            this.add(Land.class);
+            this.add(Unit.class);
+            this.add(LeasedUnit.class);
+            this.add(Term.class);
+            this.add(Account.class);
+            this.add(BookEntry.class);
+            this.add(Record.class);
+        }
+    };
 
     @SuppressWarnings("unchecked")
     private Map<String, EntityNode> getNodeList(AbstractNode parent, Class<?> entityClass) throws IntrospectionException, IllegalAccessException,
-        IllegalArgumentException, InvocationTargetException {
+            IllegalArgumentException, InvocationTargetException {
         Map<String, EntityNode> listOfNodes = null;
 
         Class<?> parentClass = parent.getClass();
@@ -88,7 +88,6 @@ public class BasicEntityNodeConverter<EntityNode extends AbstractEntityNode> ext
 
                 }
             }
-
         }
 
         return listOfNodes;
@@ -105,110 +104,144 @@ public class BasicEntityNodeConverter<EntityNode extends AbstractEntityNode> ext
      *            the original csv data line
      */
     public void connectObjectWithContainer(Container zgif, EntityNode entity, CSVLine<EntityNode> csvLine) {
+        Map<Class<?>, String> foundParents = new HashMap<Class<?>, String>();
+        String periodIdentifier = null;
         try {
-            Map<String, String> originalCSV = csvLine.getOriginalFields();
+            try {
+                Map<String, String> originalCSV = csvLine.getOriginalFields();
 
-            String periodIdentifier = originalCSV.get("PERIOD.IDENTIFIER");
-            Data root = null;
-            if (periodIdentifier != null && !periodIdentifier.isEmpty()) {
-                Period period = zgif.getPeriods().get(periodIdentifier);
-                root = period.getData();
-            } else {
-                root = zgif.getMaindata();
-            }
-
-            Map<Class<?>, String> foundParents = new HashMap<Class<?>, String>();
-            for (Map.Entry<String, String> entry : originalCSV.entrySet()) {
-                String key = entry.getKey();
-                if (key.endsWith(".OBJECT_ID_SENDER")) {
-                    Class<?> clazz = null;
-                    for (Class<?> testClass : x) {
-                        if (testClass.getSimpleName().toUpperCase().equals(key.substring(0, key.indexOf(".")))) {
-                            clazz = testClass;
-                            break;
-                        }
-                    }
-
-                    foundParents.put(clazz, entry.getValue());
+                periodIdentifier = originalCSV.get("PERIOD.IDENTIFIER");
+                Data root = null;
+                if (periodIdentifier != null && !periodIdentifier.isEmpty()) {
+                    Period period = zgif.getPeriods().get(periodIdentifier);
+                    root = period.getData();
+                } else {
+                    root = zgif.getMaindata();
                 }
-            }
-                
-            AbstractNode curNode = root;
-            for (Class<?> clazz : x) {
-                if (foundParents.containsKey(clazz) && !(entity.getClass().equals(Term.class) && clazz.equals(Building.class))) {
-                    String identifier = foundParents.get(clazz);
 
-                    if (curNode instanceof Lease && clazz.equals(Unit.class)) {
-                        clazz = LeasedUnit.class;
-                        // TODO - hash:
-                        identifier = "c" + foundParents.get(Company.class).replaceFirst("^0+(?!$)", "") + "-p" + foundParents.get(Property.class).replaceFirst("^0+(?!$)", "") + "-l" + foundParents.get(Lease.class).replaceFirst("^0+(?!$)", "")
-                            + "-u" + foundParents.get(Unit.class).replaceFirst("^0+(?!$)", "");
-                    }
-                    Map<String, AbstractEntityNode> list = (Map<String, AbstractEntityNode>) getNodeList(curNode, clazz);
-                    if (list.get(identifier) != null) {
-                        curNode = list.get(identifier);
-                    }
-                    if (entity instanceof Unit) {
-                        if (clazz.equals(Building.class) || clazz.equals(Land.class)) {
-                            Map<String, EntityNode> entityList = getNodeList(curNode, this.type);
-                            entityList.put(entity.getObjectIdSender(), entity);
+                foundParents = new HashMap<Class<?>, String>();
+                for (Map.Entry<String, String> entry : originalCSV.entrySet()) {
+                    String key = entry.getKey();
+                    if (key.endsWith(".OBJECT_ID_SENDER")) {
+                        Class<?> clazz = null;
+                        for (Class<?> testClass : x) {
+                            if (testClass.getSimpleName().toUpperCase().equals(key.substring(0, key.indexOf(".")))) {
+                                clazz = testClass;
+                                break;
+                            }
                         }
+
+                        foundParents.put(clazz, entry.getValue());
                     }
                 }
-            }
 
-            Map<String, EntityNode> entityList = getNodeList(curNode, this.type);
-            String identifier = entity.getObjectIdSender();
-            if(entity instanceof Term) {
-                identifier = ((Term)entity).getConditionType().name();
+                AbstractNode curNode = root;
+                for (Class<?> clazz : x) {
+                    if (foundParents.containsKey(clazz) && !(entity.getClass().equals(Term.class) && clazz.equals(Building.class))) {
+                        String identifier = foundParents.get(clazz);
+
+                        if (curNode instanceof Lease && clazz.equals(Unit.class)) {
+                            clazz = LeasedUnit.class;
+                            // TODO - hash:
+                            identifier = "c" + foundParents.get(Company.class) + "-p" + foundParents.get(Property.class) + "-u" + foundParents.get(Unit.class);
+                        }
+                        Map<String, AbstractEntityNode> list = (Map<String, AbstractEntityNode>) getNodeList(curNode, clazz);
+                        if (list.get(identifier) != null) {
+                            curNode = list.get(identifier);
+                        }
+                        if (entity instanceof Unit) {
+                            if (clazz.equals(Building.class) || clazz.equals(Land.class)) {
+                                Map<String, EntityNode> entityList = getNodeList(curNode, this.type);
+                                entityList.put(entity.getObjectIdSender(), entity);
+                            }
+                        }
+                    }
+                }
+
+                Map<String, EntityNode> entityList = getNodeList(curNode, this.type);
+                String identifier = entity.getObjectIdSender();
+                entityList.put(identifier, entity);
+                // System.out.println(curNode.getClass());
+                //
+                // Information.getHierarchicalParentClassesOfNode(root.getClass(),
+                // entity.getClass());
+                //
+                // // Iterator<Class<?>> parentIterator =
+                // //
+                // Arrays.asList(Information.getParentClassesOfNode(object.getClass())).iterator();
+                //
+                // System.out.println("=== " + entity + " ===");
+                //
+                // AbstractNode curParent = root;
+                // while (curParent != null) {
+                // System.out.println(root);
+                // Class<?> nextParentClass = null;// parentIterator.next();
+                // List<Field> nodeListFields = new
+                // NodeInformation(curParent.getClass()).getNodeLists();
+                //
+                // curParent = null;
+                // for (Field nodeListField : nodeListFields) {
+                // ParameterizedType pt = (ParameterizedType)
+                // nodeListField.getGenericType();
+                // String typeName = pt.getActualTypeArguments()[1].toString();
+                //
+                // if
+                // (typeName.endsWith(nextParentClass.getSimpleName().replaceFirst("Abstract",
+                // ""))) {
+                // String typeNameCSV =
+                // typeName.substring(typeName.lastIndexOf(".")
+                // + 1).toUpperCase();
+                // String nextParentObjectId = originalCSV.get(typeNameCSV +
+                // ".OBJECT_ID_SENDER");
+                //
+                // PropertyDescriptor pd = new
+                // PropertyDescriptor(nodeListField.getName(),
+                // curParent.getClass());
+                // Method getListMethod = pd.getReadMethod();
+                // Map<String, AbstractNode> listOfNodes = (Map<String,
+                // AbstractNode>) getListMethod.invoke(curParent);
+                // AbstractNode nextParent =
+                // listOfNodes.get(nextParentObjectId);
+                // curParent = nextParent;
+                // }
+                // }
+                // }
+            } catch (IntrospectionException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
-            entityList.put(identifier, entity);
-            // System.out.println(curNode.getClass());
-            //
-            // Information.getHierarchicalParentClassesOfNode(root.getClass(),
-            // entity.getClass());
-            //
-            // // Iterator<Class<?>> parentIterator =
-            // //
-            // Arrays.asList(Information.getParentClassesOfNode(object.getClass())).iterator();
-            //
-            // System.out.println("=== " + entity + " ===");
-            //
-            // AbstractNode curParent = root;
-            // while (curParent != null) {
-            // System.out.println(root);
-            // Class<?> nextParentClass = null;// parentIterator.next();
-            // List<Field> nodeListFields = new
-            // NodeInformation(curParent.getClass()).getNodeLists();
-            //
-            // curParent = null;
-            // for (Field nodeListField : nodeListFields) {
-            // ParameterizedType pt = (ParameterizedType)
-            // nodeListField.getGenericType();
-            // String typeName = pt.getActualTypeArguments()[1].toString();
-            //
-            // if
-            // (typeName.endsWith(nextParentClass.getSimpleName().replaceFirst("Abstract",
-            // ""))) {
-            // String typeNameCSV = typeName.substring(typeName.lastIndexOf(".")
-            // + 1).toUpperCase();
-            // String nextParentObjectId = originalCSV.get(typeNameCSV +
-            // ".OBJECT_ID_SENDER");
-            //
-            // PropertyDescriptor pd = new
-            // PropertyDescriptor(nodeListField.getName(),
-            // curParent.getClass());
-            // Method getListMethod = pd.getReadMethod();
-            // Map<String, AbstractNode> listOfNodes = (Map<String,
-            // AbstractNode>) getListMethod.invoke(curParent);
-            // AbstractNode nextParent = listOfNodes.get(nextParentObjectId);
-            // curParent = nextParent;
-            // }
-            // }
-            // }
-        } catch (IntrospectionException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        } catch (Exception ex) {
+            String parentsString = "[";
+            for (Map.Entry<Class<?>, String> parent : foundParents.entrySet()) {
+                if (parentsString == "[") {
+                    parentsString += parent.getKey().getSimpleName() + ":" + parent.getValue();
+                } else {
+                    parentsString += ", " + parent.getKey().getSimpleName() + ":" + parent.getValue();
+                }
+            }
+            parentsString += "]";
+            throw new RuntimeException("error connecting object (id=" + entity.getObjectIdSender() + ", period-id=" + periodIdentifier + ", parents="
+                    + parentsString + ") into zgif object tree", ex);
         }
+    }
+
+    public static Map<Class<?>, String> getParentsFromLine(CSVLine<?> csvLine) {
+        Map<Class<?>, String> foundParents = new HashMap<Class<?>, String>();
+        for (Map.Entry<String, String> entry : csvLine.getOriginalFields().entrySet()) {
+            String key = entry.getKey();
+            if (key.endsWith(".OBJECT_ID_SENDER")) {
+                Class<?> clazz = null;
+                for (Class<?> testClass : x) {
+                    if (testClass.getSimpleName().toUpperCase().equals(key.substring(0, key.indexOf(".")))) {
+                        clazz = testClass;
+                        break;
+                    }
+                }
+
+                foundParents.put(clazz, entry.getValue());
+            }
+        }
+
+        return foundParents;
     }
 }

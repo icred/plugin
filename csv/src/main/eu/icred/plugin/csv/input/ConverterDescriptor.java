@@ -17,10 +17,12 @@ public class ConverterDescriptor implements IConverterDescriptor {
     private InputStream csvStreamCompany;
     private InputStream csvStreamProperty;
     private InputStream csvStreamLand;
+    private InputStream csvStreamPartner;
     private InputStream csvStreamBuild;
     private InputStream csvStreamLease;
     private InputStream csvStreamUnit;
     private InputStream csvStreamTerm;
+    private InputStream csvStreamAccount;
 
     /**
      * simple constructor
@@ -182,4 +184,31 @@ public class ConverterDescriptor implements IConverterDescriptor {
     public void setCsvStreamTerm(InputStream csvStreamTerm) {
         this.csvStreamTerm = csvStreamTerm;
     }
+
+    /**
+     * @author phoudek
+     * @return the csvStreamAccount
+     */
+    public InputStream getCsvStreamAccount() {
+        return csvStreamAccount;
+    }
+
+    /**
+     * @author phoudek
+     * @param csvStreamAccount
+     *            the csvStreamAccount to set
+     */
+    public void setCsvStreamAccount(InputStream csvStreamAccount) {
+        this.csvStreamAccount = csvStreamAccount;
+    }
+
+    public InputStream getCsvStreamPartner() {
+        return csvStreamPartner;
+    }
+
+    public void setCsvStreamPartner(InputStream csvStreamPartner) {
+        this.csvStreamPartner = csvStreamPartner;
+    }
+    
+    
 }

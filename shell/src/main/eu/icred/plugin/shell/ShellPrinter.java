@@ -2,20 +2,17 @@ package eu.icred.plugin.shell;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import eu.icred.model.datatype.enumeration.Subset;
 import eu.icred.model.node.AbstractNode;
 import eu.icred.model.node.Container;
 import eu.icred.model.node.Meta;
-import eu.icred.model.node.Period;
 import eu.icred.model.node.entity.AbstractEntityNode;
 import eu.icred.model.node.entity.LeasedUnit;
+import eu.icred.model.node.Period;
 import eu.icred.model.node.entity.Unit;
 import eu.icred.plugin.PluginComponent;
 import eu.icred.plugin.worker.WorkerConfiguration;
@@ -31,22 +28,10 @@ import eu.icred.plugin.worker.output.IExportWorker;
  */
 public class ShellPrinter implements IExportWorker {
     private static Logger        logger            = Logger.getLogger(ShellPrinter.class);
-    public static final Subset[] SUPPORTED_SUBSETS = Subset.values();
 
     protected Container          container         = null;
 
     private String               prefix            = "";
-
-    /**
-     * returns the list of supported subsets of this import plugin
-     * 
-     * @author phoudek
-     * @return list of supported subsets
-     */
-    @Override
-    public List<Subset> getSupportedSubsets() {
-        return Arrays.asList(SUPPORTED_SUBSETS);
-    }
 
     private void doExport() {
         try {
@@ -125,9 +110,9 @@ public class ShellPrinter implements IExportWorker {
     private void exportEntityNode(AbstractEntityNode node) throws Throwable {
         System.out.print(" (");
         if (node instanceof LeasedUnit) {
-            System.out.print("hash=" + ((LeasedUnit) node).getHash() + ", ");
+//            System.out.print("hash=" + ((LeasedUnit) node).getHash() + ", ");
         } else if (node instanceof Unit) {
-            System.out.print("hash=" + ((Unit) node).getHash() + ", ");
+//            System.out.print("hash=" + ((Unit) node).getHash() + ", ");
         }
         System.out.print("id=" + node.getObjectIdSender() + ", label=" + node.getLabel() + ")");
 

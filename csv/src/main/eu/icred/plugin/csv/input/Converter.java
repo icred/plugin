@@ -16,7 +16,6 @@ import eu.icred.model.node.entity.Building;
 import eu.icred.model.node.entity.Company;
 import eu.icred.model.node.entity.Lease;
 import eu.icred.model.node.entity.Property;
-import eu.icred.model.node.entity.Term;
 import eu.icred.plugin.PluginComponent;
 import eu.icred.plugin.worker.WorkerConfiguration;
 import eu.icred.plugin.worker.input.IImportWorker;
@@ -29,13 +28,14 @@ import eu.icred.ui.gui.DefaultPluginGui;
  * @author phoudek
  * 
  */
+@SuppressWarnings("deprecation")
 public class Converter extends BasicConverter implements IImportWorker {
     @SuppressWarnings("unused")
-    private static Logger        logger            = Logger.getLogger(Converter.class);
+    private static Logger logger = Logger.getLogger(Converter.class);
 
     public static final Subset[] SUPPORTED_SUBSETS = Subset.values();
 
-    private Container            container         = null;
+    private Container container = null;
 
     /**
      * @author phoudek
@@ -47,44 +47,42 @@ public class Converter extends BasicConverter implements IImportWorker {
     public void doConvertData(IConverterDescriptor descriptor) {
         ConverterDescriptor myDesc = (ConverterDescriptor) descriptor;
 
-        this.container = new Container();
-
         NodeConverterDescriptor nodeConverterDescr = new NodeConverterDescriptor();
+        container = new Container();
+        nodeConverterDescr.setContainer(container);
+
+
         nodeConverterDescr.setCsvStream(myDesc.getCsvStreamMeta());
-        nodeConverterDescr.setContainer(this.container);
-
-        MetaConverter metaConverter = new MetaConverter();
-        metaConverter.convertData(nodeConverterDescr);
-
-        PeriodConverter periodConverter = new PeriodConverter();
+        new MetaConverter().convertData(nodeConverterDescr);
+        
         nodeConverterDescr.setCsvStream(myDesc.getCsvStreamPeriods());
-        periodConverter.convertData(nodeConverterDescr);
+        new PeriodConverter().convertData(nodeConverterDescr);
 
-        BasicEntityNodeConverter<Company> comConverter = new BasicEntityNodeConverter<Company>(Company.class);
         nodeConverterDescr.setCsvStream(myDesc.getCsvStreamCompany());
-        comConverter.convertData(nodeConverterDescr);
+        new BasicEntityNodeConverter<Company>(Company.class).convertData(nodeConverterDescr);
 
-        BasicEntityNodeConverter<Property> propConverter = new BasicEntityNodeConverter<Property>(Property.class);
         nodeConverterDescr.setCsvStream(myDesc.getCsvStreamProperty());
-        propConverter.convertData(nodeConverterDescr);
+        new BasicEntityNodeConverter<Property>(Property.class).convertData(nodeConverterDescr);
 
-        BasicEntityNodeConverter<Building> buildConverter = new BasicEntityNodeConverter<Building>(Building.class);
         nodeConverterDescr.setCsvStream(myDesc.getCsvStreamBuild());
-        buildConverter.convertData(nodeConverterDescr);
+        new BasicEntityNodeConverter<Building>(Building.class).convertData(nodeConverterDescr);
 
-        BasicEntityNodeConverter<Lease> leaseConverter = new BasicEntityNodeConverter<Lease>(Lease.class);
         nodeConverterDescr.setCsvStream(myDesc.getCsvStreamLease());
-        leaseConverter.convertData(nodeConverterDescr);
+        new BasicEntityNodeConverter<Lease>(Lease.class).convertData(nodeConverterDescr);
+        
 
-        UnitConverter unitConverter = new UnitConverter();
         nodeConverterDescr.setCsvStream(myDesc.getCsvStreamUnit());
-        unitConverter.convertData(nodeConverterDescr);
-
-        BasicEntityNodeConverter<Term> termConverter = new BasicEntityNodeConverter<Term>(Term.class);
+//      new BasicEntityNodeConverter<Unit>(Unit.class).convertData(nodeConverterDescr);
+        new UnitConverter().convertData(nodeConverterDescr);
+        
         nodeConverterDescr.setCsvStream(myDesc.getCsvStreamTerm());
-        termConverter.convertData(nodeConverterDescr);
+//      new BasicEntityNodeConverter<Term>(Term.class).convertData(nodeConverterDescr);
+        new TermConverter().convertData(nodeConverterDescr);
+        
+        nodeConverterDescr.setCsvStream(myDesc.getCsvStreamAccount());
+        new AccountConverter().convertData(nodeConverterDescr);
     }
-
+    
     /**
      * @author phoudek
      * @return there is no transformer class for a zgif object, return value is
@@ -116,23 +114,25 @@ public class Converter extends BasicConverter implements IImportWorker {
     /*
      * (non-Javadoc)
      * 
-     * @see
-     * eu.icred.plugin.input.ImportPlugin#load(eu.icred.
+     * @see eu.icred.plugin.input.ImportPlugin#load(eu.icred.
      * plugin.input.ImportPluginConfiguration)
      */
     public void load(ImportWorkerConfiguration config) {
+        logger.debug("load(config)");
         ConverterDescriptor desc = new ConverterDescriptor();
 
         SortedMap<String, InputStream> streams = config.getStreams();
-
+        
         desc.setCsvStreamMeta(streams.get("meta"));
         desc.setCsvStreamPeriods(streams.get("periods"));
         desc.setCsvStreamCompany(streams.get("company"));
         desc.setCsvStreamProperty(streams.get("property"));
-        desc.setCsvStreamBuild(streams.get("build"));
+        desc.setCsvStreamBuild(streams.get("building"));
         desc.setCsvStreamUnit(streams.get("unit"));
         desc.setCsvStreamLease(streams.get("lease"));
         desc.setCsvStreamTerm(streams.get("term"));
+        desc.setCsvStreamPartner(streams.get("partner"));
+        desc.setCsvStreamAccount(streams.get("account"));
 
         doConvertData(desc);
     }
@@ -140,8 +140,7 @@ public class Converter extends BasicConverter implements IImportWorker {
     /*
      * (non-Javadoc)
      * 
-     * @see eu.icred.plugin.Plugin#load(eu.icred.plugin.
-     * PluginConfiguration)
+     * @see eu.icred.plugin.Plugin#load(eu.icred.plugin. PluginConfiguration)
      */
     public void load(WorkerConfiguration config) {
         load((ImportWorkerConfiguration) config);
@@ -162,10 +161,12 @@ public class Converter extends BasicConverter implements IImportWorker {
                 streams.put("periods", null);
                 streams.put("company", null);
                 streams.put("property", null);
-                streams.put("build", null);
+                streams.put("building", null);
                 streams.put("unit", null);
                 streams.put("lease", null);
                 streams.put("term", null);
+                streams.put("partner", null);
+                streams.put("account", null);
             }
         };
     }

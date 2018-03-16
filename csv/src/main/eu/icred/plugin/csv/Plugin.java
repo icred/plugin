@@ -1,24 +1,11 @@
 package eu.icred.plugin.csv;
 
-import eu.icred.plugin.csv.input.Converter;
-
 import eu.icred.plugin.IPlugin;
+import eu.icred.plugin.csv.input.Converter;
 import eu.icred.plugin.worker.input.IImportWorker;
 import eu.icred.plugin.worker.output.IExportWorker;
 
 public class Plugin implements IPlugin {
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * eu.icred.plugin.IPlugin#isModelVersionSupported(java.lang.String
-     * )
-     */
-    @Override
-    public boolean isModelVersionSupported(String version) {
-        return version.startsWith("1-0.5.") || version.startsWith("1-0.6.");
-    }
 
     /*
      * (non-Javadoc)
@@ -60,4 +47,8 @@ public class Plugin implements IPlugin {
         return null;
     }
 
+    @Override
+    public boolean isModelVersionSupported(String version) {
+        return version.startsWith("1-0.5.") || version.startsWith("1-0.6.");
+    }
 }

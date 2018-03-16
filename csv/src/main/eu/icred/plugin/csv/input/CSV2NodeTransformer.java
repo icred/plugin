@@ -40,7 +40,7 @@ import eu.icred.model.node.group.AbstractGroupNode;
  *            Type of the <code>AbstractNode</code> for transformer target
  */
 public class CSV2NodeTransformer<NodeType extends AbstractNode> extends BasicTransformer<CSVLine<NodeType>, NodeType> {
-    private static Logger     logger = Logger.getLogger(CSV2NodeTransformer.class);
+    private static Logger logger = Logger.getLogger(CSV2NodeTransformer.class);
 
     protected Class<NodeType> type;
 
@@ -71,18 +71,18 @@ public class CSV2NodeTransformer<NodeType extends AbstractNode> extends BasicTra
 
     private void setExtensionMapValue(NodeType object, String key, String value) {
         ExtensionMap em = object.getExtensionMap();
-        
+ 
         String keyName = key.substring(key.lastIndexOf(".") + 1);
-        
-        if(key.startsWith("EXTENSION.ITEM.")) {
+
+        if (key.startsWith("EXTENSION.ITEM.")) {
             em.setValue(keyName, value);
-        } else if(key.startsWith("EXTENSION.LIST.")) {
+        } else if (key.startsWith("EXTENSION.LIST.")) {
             em.setSubList(keyName, Arrays.asList(value.split(",")));
         } else {
-            throw new Error("unknown key: " + key);
+//            throw new Error("unknown key: " + key);
         }
     }
-    
+
     /**
      * calls the setter for an object
      * 
@@ -94,17 +94,16 @@ public class CSV2NodeTransformer<NodeType extends AbstractNode> extends BasicTra
      *            value to set
      */
     protected void setValue(NodeType object, String key, String value) {
-        if(key.startsWith("EXTENSION.")) {
+        if (key.startsWith("EXTENSION.")) {
             setExtensionMapValue(object, key, value);
             return;
         }
-        
+
         Map<String, Method> methodMap = getMethodMap(object.getClass());
 
         Method method = null;
         NodeType methodInvokeObject = object;
 
-        
         Integer separatorPos = key.indexOf(".");
         if (separatorPos >= 0) {
             // nested object:
@@ -151,6 +150,8 @@ public class CSV2NodeTransformer<NodeType extends AbstractNode> extends BasicTra
                     setValue = value;
                 } else if (Double.class.isAssignableFrom(targetType)) {
                     setValue = Double.parseDouble(value);
+                } else if (Integer.class.isAssignableFrom(targetType)) {
+                    setValue = Integer.valueOf(value);
                 } else if (BigDecimal.class.isAssignableFrom(targetType)) {
                     setValue = BigDecimal.valueOf(Double.parseDouble(value));
                 } else if (Currency.class.isAssignableFrom(targetType)) {
@@ -242,12 +243,12 @@ public class CSV2NodeTransformer<NodeType extends AbstractNode> extends BasicTra
                 method.invoke(methodInvokeObject, setValue);
             } catch (Throwable e) {
                 throw new RuntimeException("could not set '" + key + "' (value=" + value + ") to object " + object.toString()
-                    + " (plugin bug - please report bug of plugin)", e);
+                        + " (plugin bug - please report bug of plugin)", e);
             }
         } else {
             if (!key.endsWith(".identifier") && !key.endsWith(".objectIdSender")) {
                 throw new RuntimeException("could not set '" + key + "' to object " + object.toString()
-                    + ": no setter found for key (please report bug of plugin)");
+                        + ": no setter found for key (please report bug of plugin)");
             }
         }
     }
@@ -264,7 +265,17 @@ public class CSV2NodeTransformer<NodeType extends AbstractNode> extends BasicTra
         try {
             object = type.newInstance();
             for (Entry<String, String> dataField : csvLine.entrySet()) {
-                setValue(object, dataField.getKey(), dataField.getValue());
+                String keyName = ((String) dataField.getKey()).startsWith("EXTENSION.REVC_") ? "EXTENSION.ITEM." + ((String) dataField.getKey()).substring(10)
+                        : (String) dataField.getKey();
+                setValue(object, keyName, dataField.getValue());
+            }
+
+            ExtensionMap em = object.getExtensionMap();
+            for (Map.Entry<String, String> dataField : csvLine.getOriginalFields().entrySet()) {
+                String keyName = (String) dataField.getKey();
+                if ((!keyName.endsWith(".OBJECT_ID_SENDER")) && (!keyName.endsWith("PERIOD.IDENTIFIER"))) {
+                    em.setValue("ORGCSV_" + keyName, (String) dataField.getValue());
+                }
             }
         } catch (IllegalAccessException e) {
             logger.error("could not create object of type '" + type.toString() + "' (plugin bug - please report bug of plugin)", e);
